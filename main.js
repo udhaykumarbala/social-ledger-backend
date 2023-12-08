@@ -1,7 +1,13 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
+// add cors
+const cors = require('cors');
+
+// Initialize express
 
 const app = express();
+// add cors
+app.use(cors());
 const port = 3000;
 
 // Initialize SQLite database
@@ -91,7 +97,10 @@ app.get('/getAddress', (req, res) => {
         if (err) {
             res.status(500).send('Error retrieving address');
         } else {
-            res.send(`Address for ID ${id} is: ${address}`);
+            const response = {
+                address: address,
+            };
+            res.send(response);
         }
     });
 });
