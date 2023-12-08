@@ -1,11 +1,14 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
 // add cors
 const cors = require('cors');
+
 
 // Initialize express
 
 const app = express();
+app.use(bodyParser.json());
 // add cors
 app.use(cors());
 const port = 3000;
@@ -85,6 +88,27 @@ const getAddress = (id, callback) => {
     });
 };
 
+// verifySignedMessage 
+function verifySignedMessage(message, signature) {
+    const messageBuffer = ethUtil.toBuffer(message);
+    const messageHash = ethUtil.hashPersonalMessage(messageBuffer);
+    const signatureBuffer = ethUtil.toBuffer(signature);
+    const signatureParams = ethUtil.fromRpcSig(signatureBuffer);
+  
+    const publicKey = ethUtil.ecrecover(
+      messageHash,
+      signatureParams.v,
+      signatureParams.r,
+      signatureParams.s
+    );
+  
+    const addressBuffer = ethUtil.publicToAddress(publicKey);
+    const address = ethUtil.bufferToHex(addressBuffer);
+  
+    return address;
+  }
+
+
 // Home route
 app.get('/', (req, res) => {
     res.send('Hello, World!');
@@ -106,13 +130,20 @@ app.get('/getAddress', (req, res) => {
 });
 
 // Route to add address
-app.get('/addAddress', (req, res) => {
-    const address = req.query.address;
+app.post('/addAddress', (req, res) => {
+    const signature = req.body.signature;
+
+    const message = req.body.message;
+    const address = verifySignedMessage(message, signature);
     addAddress(address, (err, id) => {
         if (err) {
             res.status(500).send('Error adding address');
         } else {
-            res.send(`ID for address ${address} is: ${id}`);
+            const response = {
+                id: id,
+                address: address,
+            };
+            res.send(response);
         }
     });
 });
